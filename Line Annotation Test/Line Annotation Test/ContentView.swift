@@ -10,11 +10,15 @@ import MapLibre
 import CoreLocation
 
 struct ContentView: View {
-    @State var annotations: [[CLLocationCoordinate2D]] = []
+    @State var mapView: MLNMapView?
 
     var body: some View {
         ZStack {
-            MLNMapViewWrapper(annotations: $annotations).edgesIgnoringSafeArea(.all)
+            MLNMapViewWrapper(getMapView: { mapview in
+                DispatchQueue.main.async {
+                    self.mapView = mapview
+                }
+            }).edgesIgnoringSafeArea(.all)
             VStack {
                 Spacer()
                 Button ("Add Annotation") {
@@ -34,26 +38,31 @@ struct ContentView: View {
     }
     
     func addAnnotation() {
-        // Create 2 random coordinates
+        print("addAnnotation")
+        guard let mapView else {
+            print("mapView not set")
+            return
+        }
+        // Create random coordinates
         var coordinates: [CLLocationCoordinate2D] = []
         for _ in 0...Int.random(in: 2...10) {
             let coordinate = CLLocationCoordinate2D(latitude:Double.random(in: 20 ... 25) , longitude: Double.random(in: -112 ... -107))
             coordinates.append(coordinate)
         }
-        annotations.append(coordinates)
-        print("Adding annotation")
+        
+        let lineAnnotation = MLNPolyline(coordinates: coordinates, count: UInt(coordinates.count))
+        print("Adding annotations to map")
+        mapView.addAnnotation(lineAnnotation)
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView(annotations: [])
-    }
+#Preview {
+    ContentView()
 }
 
 struct MLNMapViewWrapper: UIViewRepresentable {
-    @Binding var annotations: [[CLLocationCoordinate2D]]
-
+    var getMapView: ((MLNMapView) -> Void)
+    
     func makeUIView(context: Context) -> MLNMapView {
         print("makeUIView")
         // Build the style URL
@@ -71,38 +80,18 @@ struct MLNMapViewWrapper: UIViewRepresentable {
     }
 
     func updateUIView(_ mapView: MLNMapView, context: Context) {
-        print("updateUIView \(annotations.count) annotations")
-        for coordinates in annotations {
-            if context.coordinator.existingAnnotations.contains(where: { $0 == coordinates }) {
-                continue
-            }
-            context.coordinator.existingAnnotations.append(coordinates)
-            let lineAnnotation = MLNPolyline(coordinates: coordinates, count: UInt(coordinates.count))
-            print("Adding annotations to map")
-            mapView.addAnnotation(lineAnnotation)
-        }
+        print("updateUIView")
+        getMapView(mapView)
     }
     
     func makeCoordinator() -> MLNMapViewCoordinator {
-        MLNMapViewCoordinator(self)
-    }
-}
-
-extension CLLocationCoordinate2D: Equatable {
-    public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
-        return lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
+        print("makeCoordinator")
+        return MLNMapViewCoordinator()
     }
 }
 
 class MLNMapViewCoordinator: NSObject, MLNMapViewDelegate {
-    var control: MLNMapViewWrapper
     var mapView: MLNMapView?
-    var existingAnnotations: [[CLLocationCoordinate2D]] = [[]]
-
-    init(_ control: MLNMapViewWrapper) {
-        self.control = control
-        super.init()
-    }
     
     func mapView(_: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor {
         return .red
