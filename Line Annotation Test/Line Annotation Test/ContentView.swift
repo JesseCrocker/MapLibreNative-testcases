@@ -21,6 +21,9 @@ struct ContentView: View {
             }).edgesIgnoringSafeArea(.all)
             VStack {
                 Spacer()
+                Button ("Clear Annotations") {
+                    clearAnnotations()
+                }
                 Button ("Add Annotation") {
                     addAnnotation()
                 }
@@ -31,6 +34,14 @@ struct ContentView: View {
         }
     }
 
+    func clearAnnotations() {
+        guard let mapView else {
+            print("mapView not set")
+            return
+        }
+        mapView.removeAnnotations(mapView.annotations ?? [])
+    }
+    
     func addAnnotationsWithTimer() {
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
             addAnnotation()
@@ -50,14 +61,23 @@ struct ContentView: View {
             coordinates.append(coordinate)
         }
         
-        let lineAnnotation = MLNPolyline(coordinates: coordinates, count: UInt(coordinates.count))
+        let lineAnnotation = AnnotationWithColor(coordinates: coordinates, count: UInt(coordinates.count))
+        lineAnnotation.width = Double.random(in: 1...10)
+        lineAnnotation.color = UIColor(hue: Double.random(in: 0.1...1.0), saturation: Double.random(in: 0.1...1.0), brightness: Double.random(in: 0.1...1.0), alpha: 1)
+        lineAnnotation.alpha = Double.random(in: 0.1...1.0)
         print("Adding annotations to map")
         mapView.addAnnotation(lineAnnotation)
     }
 }
 
+class AnnotationWithColor: MLNPolyline {
+    var color: UIColor = .blue
+    var width = 5.0
+    var alpha = 1.0
+}
+
 #Preview {
-    ContentView()
+     ContentView()
 }
 
 struct MLNMapViewWrapper: UIViewRepresentable {
@@ -94,14 +114,26 @@ class MLNMapViewCoordinator: NSObject, MLNMapViewDelegate {
     var mapView: MLNMapView?
     
     func mapView(_: MLNMapView, strokeColorForShapeAnnotation annotation: MLNShape) -> UIColor {
-        return .red
+        if let annotation = annotation as? AnnotationWithColor {
+            return annotation.color
+        } else {
+            return .red
+        }
     }
     
     func mapView(_: MLNMapView, lineWidthForPolylineAnnotation annotation: MLNPolyline) -> CGFloat {
-        return 5.0
+        if let annotation = annotation as? AnnotationWithColor {
+            return CGFloat(annotation.width)
+        } else {
+            return 3.0
+        }
     }
     
     func mapView(_: MLNMapView, alphaForShapeAnnotation annotation: MLNShape) -> CGFloat {
-        return 1.0
+        if let annotation = annotation as? AnnotationWithColor {
+            return CGFloat(annotation.alpha)
+        } else {
+            return 1.0
+        }
     }
 }
