@@ -24,8 +24,15 @@ struct ContentView: View {
                 Button ("Clear Annotations") {
                     clearAnnotations()
                 }
-                Button ("Add Annotation") {
-                    addAnnotation()
+                Button ("Add Point Annotation") {
+                    addPointAnnotation()
+                }
+                Button ("Add Line Annotation") {
+                    addLineAnnotation()
+                }
+                Button ("Add Line and Point Annotation") {
+                    addPointAnnotation()
+                    addLineAnnotation()
                 }
                 Button ("Add Annotation every second") {
                     addAnnotationsWithTimer()
@@ -44,12 +51,13 @@ struct ContentView: View {
     
     func addAnnotationsWithTimer() {
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
-            addAnnotation()
+            addLineAnnotation()
+            addPointAnnotation()
         }
     }
     
-    func addAnnotation() {
-        print("addAnnotation")
+    func addLineAnnotation() {
+        print("addLineAnnotation")
         guard let mapView else {
             print("mapView not set")
             return
@@ -67,6 +75,18 @@ struct ContentView: View {
         lineAnnotation.alpha = Double.random(in: 0.1...1.0)
         print("Adding annotations to map")
         mapView.addAnnotation(lineAnnotation)
+    }
+    
+    func addPointAnnotation() {
+        print("addPointAnnotation")
+        guard let mapView else {
+            print("mapView not set")
+            return
+        }
+        
+        let pointAnnotation = MLNPointAnnotation()
+        pointAnnotation.coordinate = CLLocationCoordinate2D(latitude:Double.random(in: 20 ... 25) , longitude: Double.random(in: -112 ... -107))
+        mapView.addAnnotation(pointAnnotation)
     }
 }
 
